@@ -886,4 +886,292 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database storage implementation
+import { db } from "./db";
+import { eq, desc, and, or, sql } from "drizzle-orm";
+import connectPg from "connect-pg-simple";
+import session from "express-session";
+import { pool } from "./db";
+
+const PostgresSessionStore = connectPg(session);
+
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.SessionStore;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
+    });
+  }
+
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, role));
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser || undefined;
+  }
+
+  async updateUserPassword(id: number, currentPassword: string, newPassword: string): Promise<boolean> {
+    const user = await this.getUser(id);
+    if (!user) return false;
+    
+    // Password verification would be handled in auth.ts
+    const [result] = await db.update(users)
+      .set({ password: newPassword })
+      .where(eq(users.id, id))
+      .returning({ success: sql`1` });
+      
+    return !!result;
+  }
+
+  async updateUserSettings(id: number, settings: Record<string, any>): Promise<boolean> {
+    // In a real implementation, we would have a settings column
+    // For now, we'll just return true
+    return true;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const [result] = await db.delete(users)
+      .where(eq(users.id, id))
+      .returning({ success: sql`1` });
+    return !!result;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  // Job methods
+  async getJob(id: number): Promise<Job | undefined> {
+    const [job] = await db.select().from(jobs).where(eq(jobs.id, id));
+    return job || undefined;
+  }
+
+  async getAllJobs(): Promise<Job[]> {
+    return await db.select().from(jobs);
+  }
+
+  async getRecentJobs(limit: number): Promise<Job[]> {
+    return await db.select().from(jobs)
+      .orderBy(desc(jobs.createdAt))
+      .limit(limit);
+  }
+
+  async createJob(insertJob: InsertJob): Promise<Job> {
+    const [job] = await db.insert(jobs).values(insertJob).returning();
+    return job;
+  }
+
+  async updateJob(id: number, jobUpdate: Partial<InsertJob>): Promise<Job | undefined> {
+    const [updatedJob] = await db.update(jobs)
+      .set(jobUpdate)
+      .where(eq(jobs.id, id))
+      .returning();
+    return updatedJob || undefined;
+  }
+
+  // Candidate methods
+  async getCandidate(id: number): Promise<Candidate | undefined> {
+    const [candidate] = await db.select().from(candidates).where(eq(candidates.id, id));
+    return candidate || undefined;
+  }
+
+  async getAllCandidates(): Promise<Candidate[]> {
+    return await db.select().from(candidates);
+  }
+
+  async getCandidatesByStage(stage: string): Promise<Candidate[]> {
+    return await db.select().from(candidates).where(eq(candidates.stage, stage));
+  }
+
+  async getCandidateByUserId(userId: number): Promise<Candidate | undefined> {
+    const [candidate] = await db.select().from(candidates).where(eq(candidates.userId, userId));
+    return candidate || undefined;
+  }
+
+  async createCandidate(insertCandidate: InsertCandidate): Promise<Candidate> {
+    const [candidate] = await db.insert(candidates).values(insertCandidate).returning();
+    return candidate;
+  }
+
+  async updateCandidate(id: number, candidateUpdate: Partial<InsertCandidate>): Promise<Candidate | undefined> {
+    const existingCandidate = await this.getCandidate(id);
+    if (!existingCandidate) return undefined;
+    
+    const oldStage = existingCandidate.stage;
+    
+    const [updatedCandidate] = await db.update(candidates)
+      .set(candidateUpdate)
+      .where(eq(candidates.id, id))
+      .returning();
+    
+    // Create activity for stage change if stage was updated
+    if (candidateUpdate.stage && oldStage !== candidateUpdate.stage) {
+      await this.createActivity({
+        userId: 1, // Default to first user
+        type: "candidate_stage_changed",
+        details: { 
+          candidateId: id, 
+          candidateName: updatedCandidate.fullName,
+          oldStage,
+          newStage: candidateUpdate.stage
+        }
+      });
+    }
+    
+    return updatedCandidate || undefined;
+  }
+
+  // Application methods
+  async getApplication(id: number): Promise<Application | undefined> {
+    const [application] = await db.select().from(applications).where(eq(applications.id, id));
+    return application || undefined;
+  }
+
+  async getApplicationsByJob(jobId: number): Promise<Application[]> {
+    return await db.select().from(applications).where(eq(applications.jobId, jobId));
+  }
+
+  async getApplicationsByUser(userId: number): Promise<Application[]> {
+    return await db.select().from(applications).where(eq(applications.userId, userId));
+  }
+
+  async getApplicationsByStage(stage: string): Promise<Application[]> {
+    return await db.select().from(applications).where(eq(applications.status, stage));
+  }
+
+  async createApplication(insertApplication: InsertApplication): Promise<Application> {
+    const [application] = await db.insert(applications).values(insertApplication).returning();
+    return application;
+  }
+
+  async updateApplicationStatus(id: number, status: string): Promise<Application | undefined> {
+    const [updatedApplication] = await db.update(applications)
+      .set({ status })
+      .where(eq(applications.id, id))
+      .returning();
+    return updatedApplication || undefined;
+  }
+
+  // Interview methods
+  async getInterview(id: number): Promise<Interview | undefined> {
+    const [interview] = await db.select().from(interviews).where(eq(interviews.id, id));
+    return interview || undefined;
+  }
+
+  async getInterviewsByApplication(applicationId: number): Promise<Interview[]> {
+    return await db.select().from(interviews).where(eq(interviews.applicationId, applicationId));
+  }
+
+  async getUpcomingInterviews(limit: number): Promise<Interview[]> {
+    return await db.select().from(interviews)
+      .where(eq(interviews.status, "scheduled"))
+      .orderBy(interviews.scheduledAt)
+      .limit(limit);
+  }
+
+  async createInterview(insertInterview: InsertInterview): Promise<Interview> {
+    const [interview] = await db.insert(interviews).values(insertInterview).returning();
+    return interview;
+  }
+
+  async updateInterview(id: number, interviewUpdate: Partial<InsertInterview>): Promise<Interview | undefined> {
+    const [updatedInterview] = await db.update(interviews)
+      .set(interviewUpdate)
+      .where(eq(interviews.id, id))
+      .returning();
+    return updatedInterview || undefined;
+  }
+
+  // Activity methods
+  async getActivities(limit: number): Promise<Activity[]> {
+    return await db.select().from(activities)
+      .orderBy(desc(activities.createdAt))
+      .limit(limit);
+  }
+
+  async createActivity(insertActivity: InsertActivity): Promise<Activity> {
+    const [activity] = await db.insert(activities).values(insertActivity).returning();
+    return activity;
+  }
+
+  // Dashboard stats
+  async getDashboardStats(): Promise<{
+    activeJobs: number;
+    newCandidates: number;
+    scheduledInterviews: number;
+    hireRate: number;
+  }> {
+    const activeJobsCount = await db.select({ count: sql`count(*)` }).from(jobs).where(eq(jobs.status, "open"));
+    const newCandidatesCount = await db.select({ count: sql`count(*)` }).from(candidates);
+    const scheduledInterviewsCount = await db.select({ count: sql`count(*)` }).from(interviews).where(eq(interviews.status, "scheduled"));
+    
+    // Calculate hire rate (this would be more complex in a real app)
+    const allApplicationsCount = await db.select({ count: sql`count(*)` }).from(applications);
+    const hiredApplicationsCount = await db.select({ count: sql`count(*)` }).from(applications).where(eq(applications.status, "hired"));
+    
+    const hireRate = allApplicationsCount[0].count > 0 
+      ? (Number(hiredApplicationsCount[0].count) / Number(allApplicationsCount[0].count) * 100) 
+      : 0;
+    
+    return {
+      activeJobs: Number(activeJobsCount[0].count),
+      newCandidates: Number(newCandidatesCount[0].count),
+      scheduledInterviews: Number(scheduledInterviewsCount[0].count),
+      hireRate: Math.round(hireRate)
+    };
+  }
+
+  // Pipeline stats
+  async getPipelineStats(): Promise<{
+    applied: number;
+    screening: number;
+    interview: number;
+    offer: number;
+    hired: number;
+  }> {
+    const appliedCount = await db.select({ count: sql`count(*)` }).from(applications).where(eq(applications.status, "applied"));
+    const screeningCount = await db.select({ count: sql`count(*)` }).from(applications).where(eq(applications.status, "screening"));
+    const interviewCount = await db.select({ count: sql`count(*)` }).from(applications).where(eq(applications.status, "interview"));
+    const offerCount = await db.select({ count: sql`count(*)` }).from(applications).where(eq(applications.status, "offer"));
+    const hiredCount = await db.select({ count: sql`count(*)` }).from(applications).where(eq(applications.status, "hired"));
+    
+    return {
+      applied: Number(appliedCount[0].count),
+      screening: Number(screeningCount[0].count),
+      interview: Number(interviewCount[0].count),
+      offer: Number(offerCount[0].count),
+      hired: Number(hiredCount[0].count)
+    };
+  }
+}
+
+// Use database storage instead of memory storage
+export const storage = new DatabaseStorage();
