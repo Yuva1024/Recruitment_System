@@ -549,7 +549,33 @@ export default function Settings() {
                   
                   <div className="flex justify-end mt-6">
                     <Button 
-                      onClick={() => profileForm.handleSubmit(onProfileSubmit)()}
+                      onClick={async () => {
+                        // Update the candidate with just the skills
+                        setIsSubmitting(true);
+                        try {
+                          if (user?.role === "candidate" && candidateData) {
+                            const res = await apiRequest("PATCH", `/api/candidates/${candidateData.id}`, {
+                              skills: skills,
+                            });
+                            
+                            if (res.ok) {
+                              queryClient.invalidateQueries({ queryKey: ["/api/candidates", user?.id] });
+                              toast({
+                                title: "Skills updated",
+                                description: "Your skills have been updated successfully.",
+                              });
+                            }
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Update failed",
+                            description: "There was an error updating your skills.",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setIsSubmitting(false);
+                        }
+                      }}
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? "Saving..." : "Save Skills"}
