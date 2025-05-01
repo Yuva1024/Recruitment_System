@@ -13,6 +13,8 @@ import Analytics from "@/pages/Analytics";
 import Settings from "@/pages/Settings";
 import JobSearch from "@/pages/JobSearch";
 import MyApplications from "@/pages/MyApplications";
+import AdminUsers from "@/pages/AdminUsers";
+import AdminActivities from "@/pages/AdminActivities";
 import { useEffect } from "react";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
@@ -77,6 +79,14 @@ function Router() {
         
         <ProtectedRoute path="/my-applications" requiredRole="candidate">
           <MyApplications />
+        </ProtectedRoute>
+        
+        <ProtectedRoute path="/admin/users" requiredRole="admin">
+          <AdminUsers />
+        </ProtectedRoute>
+        
+        <ProtectedRoute path="/admin/activities" requiredRole="admin">
+          <AdminActivities />
         </ProtectedRoute>
         
         <Route component={NotFound} />

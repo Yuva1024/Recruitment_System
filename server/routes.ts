@@ -7,29 +7,43 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { setupAuth } from "./auth";
-// Helper middleware for checking if the user is a recruiter
+// Helper middleware for checking if the user is a recruiter or admin
 function recruitersOnly(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Not authenticated" });
   }
   
   const user = req.user as User;
-  if (user.role !== "recruiter") {
+  if (user.role !== "recruiter" && user.role !== "admin") {
     return res.status(403).json({ message: "Access denied. Recruiter role required." });
   }
   
   next();
 }
 
-// Helper middleware to check if the user is a candidate
+// Helper middleware to check if the user is a candidate or admin
 function candidatesOnly(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Not authenticated" });
   }
   
   const user = req.user as User;
-  if (user.role !== "candidate") {
+  if (user.role !== "candidate" && user.role !== "admin") {
     return res.status(403).json({ message: "Access denied. Candidate role required." });
+  }
+  
+  next();
+}
+
+// Helper middleware to check if the user is an admin
+function adminOnly(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  
+  const user = req.user as User;
+  if (user.role !== "admin") {
+    return res.status(403).json({ message: "Access denied. Administrator role required." });
   }
   
   next();
@@ -426,6 +440,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch pipeline stats" });
+    }
+  });
+
+  // Admin endpoints
+  app.get("/api/admin/users", adminOnly, async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", adminOnly, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const success = await storage.deleteUser(userId);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  app.get("/api/admin/activities", adminOnly, async (req: Request, res: Response) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const activities = await storage.getActivities(limit);
+      res.json(activities);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch activities" });
+    }
+  });
+
+  // Candidate by user ID endpoint (for settings page)
+  app.get("/api/candidates/user/:userId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const user = req.user as User;
+      
+      // Only allow users to fetch their own data or admins to fetch any data
+      if (user.id !== userId && user.role !== "admin") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const candidate = await storage.getCandidateByUserId(userId);
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+      
+      res.json(candidate);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch candidate" });
+    }
+  });
+
+  // User profile update endpoint
+  app.patch("/api/users/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = req.user as User;
+      
+      // Only allow users to update their own data or admins to update any data
+      if (user.id !== userId && user.role !== "admin") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const { password, ...profileData } = req.body;
+      const updatedUser = await storage.updateUser(userId, profileData);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Change password endpoint
+  app.patch("/api/users/:id/account", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = req.user as User;
+      
+      // Only allow users to update their own data or admins to update any data
+      if (user.id !== userId && user.role !== "admin") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      if (req.body.newPassword) {
+        // Password change logic
+        const success = await storage.updateUserPassword(
+          userId, 
+          req.body.currentPassword, 
+          req.body.newPassword
+        );
+        
+        if (!success) {
+          return res.status(400).json({ message: "Invalid current password" });
+        }
+      }
+      
+      // Update other account settings
+      const accountSettings = {
+        notifications: req.body.notifications
+      };
+      
+      await storage.updateUserSettings(userId, accountSettings);
+      
+      res.json({ message: "Account settings updated successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update account settings" });
     }
   });
 

@@ -26,6 +26,11 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getUsersByRole(role: string): Promise<User[]>;
+  getAllUsers(): Promise<User[]>;
+  updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
+  updateUserPassword(id: number, currentPassword: string, newPassword: string): Promise<boolean>;
+  updateUserSettings(id: number, settings: Record<string, any>): Promise<boolean>;
+  deleteUser(id: number): Promise<boolean>;
   
   // Job methods
   getJob(id: number): Promise<Job | undefined>;
@@ -36,6 +41,7 @@ export interface IStorage {
   
   // Candidate methods
   getCandidate(id: number): Promise<Candidate | undefined>;
+  getCandidateByUserId(userId: number): Promise<Candidate | undefined>;
   getAllCandidates(): Promise<Candidate[]>;
   getCandidatesByStage(stage: string): Promise<Candidate[]>;
   createCandidate(candidate: InsertCandidate): Promise<Candidate>;
@@ -134,6 +140,97 @@ export class MemStorage implements IStorage {
       (user) => user.role === role
     );
   }
+  
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+  
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const existingUser = this.users.get(id);
+    if (!existingUser) return undefined;
+    
+    // Don't allow updating password through this method
+    const { password, ...updateData } = userData;
+    
+    const updatedUser = { ...existingUser, ...updateData };
+    this.users.set(id, updatedUser);
+    
+    return updatedUser;
+  }
+  
+  async updateUserPassword(id: number, currentPassword: string, newPassword: string): Promise<boolean> {
+    const user = this.users.get(id);
+    if (!user) return false;
+    
+    // Simple password validation
+    // In a real app, we'd use proper password hashing and comparison
+    if (user.password !== currentPassword) {
+      return false;
+    }
+    
+    // Update password
+    user.password = newPassword;
+    this.users.set(id, user);
+    
+    return true;
+  }
+  
+  async updateUserSettings(id: number, settings: Record<string, any>): Promise<boolean> {
+    const user = this.users.get(id);
+    if (!user) return false;
+    
+    // Update user settings
+    // In a real app, you'd need to make sure these properties exist
+    Object.assign(user, settings);
+    this.users.set(id, user);
+    
+    return true;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    if (!this.users.has(id)) return false;
+    
+    // First remove any related data
+    
+    // Remove user's applications
+    for (const [appId, app] of this.applications.entries()) {
+      if (app.userId === id) {
+        this.applications.delete(appId);
+      }
+    }
+    
+    // Remove interviews where user is recruiter
+    for (const [interviewId, interview] of this.interviews.entries()) {
+      if (interview.recruiterId === id) {
+        this.interviews.delete(interviewId);
+      }
+    }
+    
+    // Remove jobs posted by the user
+    for (const [jobId, job] of this.jobs.entries()) {
+      if (job.userId === id) {
+        this.jobs.delete(jobId);
+      }
+    }
+    
+    // If candidate, remove candidate record
+    const candidate = await this.getCandidateByUserId(id);
+    if (candidate) {
+      this.candidates.delete(candidate.id);
+    }
+    
+    // Finally remove the user
+    this.users.delete(id);
+    
+    // Create activity for user deletion
+    await this.createActivity({
+      userId: 1, // Default to first user (admin)
+      type: "user_deleted",
+      details: { userId: id }
+    });
+    
+    return true;
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
@@ -220,6 +317,12 @@ export class MemStorage implements IStorage {
   async getCandidatesByStage(stage: string): Promise<Candidate[]> {
     return Array.from(this.candidates.values())
       .filter(candidate => candidate.stage === stage);
+  }
+  
+  async getCandidateByUserId(userId: number): Promise<Candidate | undefined> {
+    return Array.from(this.candidates.values()).find(
+      candidate => candidate.userId === userId
+    );
   }
 
   async createCandidate(insertCandidate: InsertCandidate): Promise<Candidate> {
@@ -529,14 +632,26 @@ export class MemStorage implements IStorage {
     // Create default admin user
     const admin: InsertUser = {
       username: "admin",
+      password: "admin123",
+      fullName: "Admin User",
+      email: "admin@example.com",
+      role: "admin",
+      position: "Administrator",
+      profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+    };
+    this.createUser(admin);
+    
+    // Create default recruiter
+    const recruiter: InsertUser = {
+      username: "recruiter",
       password: "password",
       fullName: "Sarah Johnson",
       email: "sarah@example.com",
       role: "recruiter",
       position: "Senior Recruiter",
-      profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+      profileImage: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
     };
-    this.createUser(admin);
+    this.createUser(recruiter);
     
     // Create some initial jobs
     const job1: InsertJob = {
