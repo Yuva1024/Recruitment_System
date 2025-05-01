@@ -22,6 +22,11 @@ export default function MyApplications() {
   const { data: applications, isLoading: applicationsLoading } = useQuery<Application[]>({
     queryKey: ["/api/applications", { userId: user?.id }],
     enabled: !!user?.id,
+    queryFn: async ({ queryKey }) => {
+      const res = await fetch(`/api/applications?userId=${user?.id}`);
+      if (!res.ok) throw new Error('Failed to fetch applications');
+      return res.json();
+    }
   });
   
   // Fetch jobs to get details for each application

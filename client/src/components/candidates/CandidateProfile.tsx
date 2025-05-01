@@ -22,9 +22,16 @@ export function CandidateProfile({ candidate }: CandidateProfileProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Get candidate's applications
+  // Get candidate's applications based on userId
   const { data: applications } = useQuery<Application[]>({
-    queryKey: ['/api/applications', { candidateId: candidate.id }],
+    queryKey: ['/api/applications', { userId: candidate.userId }],
+    enabled: !!candidate.userId,
+    queryFn: async ({ queryKey }) => {
+      if (!candidate.userId) return [];
+      const res = await fetch(`/api/applications?userId=${candidate.userId}`);
+      if (!res.ok) throw new Error('Failed to fetch applications');
+      return res.json();
+    }
   });
   
   // Get jobs for applications
