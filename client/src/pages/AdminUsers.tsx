@@ -162,9 +162,9 @@ export default function AdminUsers() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {/* Use createdAt if available, otherwise just display "Member" */}
-                            {user.createdAt 
-                              ? formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })
+                            {/* Display join date or default text */}
+                            {user && 'createdAt' in user && user.createdAt 
+                              ? formatDistanceToNow(new Date(user.createdAt as string), { addSuffix: true })
                               : "Member"}
                           </TableCell>
                           <TableCell>

@@ -7,6 +7,7 @@ export interface User {
   position?: string;
   profileImage?: string;
   resume?: string;
+  createdAt?: string | Date;
 }
 
 export interface Job {
