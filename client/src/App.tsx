@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/Dashboard";
 import Jobs from "@/pages/Jobs";
 import Candidates from "@/pages/Candidates";
@@ -13,26 +14,64 @@ import Settings from "@/pages/Settings";
 import { useEffect } from "react";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
+import { useAuth } from "@/hooks/use-auth";
 
-function Router() {
+function MainLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  
+  // Only show sidebar and header for authenticated users
+  if (!user) {
+    return <>{children}</>;
+  }
+  
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto">
-          <Switch>
-            <Route path="/" component={Dashboard} />
-            <Route path="/jobs" component={Jobs} />
-            <Route path="/candidates" component={Candidates} />
-            <Route path="/interviews" component={Interviews} />
-            <Route path="/analytics" component={Analytics} />
-            <Route path="/settings" component={Settings} />
-            <Route component={NotFound} />
-          </Switch>
+          {children}
         </main>
       </div>
     </div>
+  );
+}
+
+function Router() {
+  return (
+    <MainLayout>
+      <Switch>
+        <Route path="/auth" component={AuthPage} />
+        
+        <ProtectedRoute path="/">
+          <Dashboard />
+        </ProtectedRoute>
+        
+        <ProtectedRoute path="/jobs" requiredRole="recruiter">
+          <Jobs />
+        </ProtectedRoute>
+        
+        <ProtectedRoute path="/candidates" requiredRole="recruiter">
+          <Candidates />
+        </ProtectedRoute>
+        
+        <ProtectedRoute path="/interviews" requiredRole="recruiter">
+          <Interviews />
+        </ProtectedRoute>
+        
+        <ProtectedRoute path="/analytics" requiredRole="recruiter">
+          <Analytics />
+        </ProtectedRoute>
+        
+        <ProtectedRoute path="/settings">
+          <Settings />
+        </ProtectedRoute>
+        
+        <Route component={NotFound} />
+      </Switch>
+    </MainLayout>
   );
 }
 
@@ -45,8 +84,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <AuthProvider>
+          <Toaster />
+          <Router />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

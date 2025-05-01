@@ -1,12 +1,25 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LogOut, User, Settings } from "lucide-react";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { toast } = useToast();
+  const { user, logoutMutation } = useAuth();
+  const [_, setLocation] = useLocation();
   
   const toggleMobileMenu = () => {
     setMobileMenuOpen(prev => !prev);
@@ -17,6 +30,26 @@ export function Header() {
       title: "Notifications",
       description: "You have no new notifications",
     });
+  };
+  
+  const handleLogout = () => {
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        setLocation("/auth");
+      }
+    });
+  };
+  
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!user || !user.fullName) return "U";
+    
+    return user.fullName
+      .split(" ")
+      .map(name => name[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
   };
   
   return (
@@ -65,17 +98,43 @@ export function Header() {
             <i className="fas fa-search"></i>
           </Button>
           
-          <Button 
-            variant="ghost"
-            size="icon"
-            className="flex md:hidden items-center p-0"
-          >
-            <img 
-              className="w-8 h-8 rounded-full" 
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-              alt="User profile" 
-            />
-          </Button>
+          {/* User Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={user?.profileImage || ""} alt={user?.fullName || "User"} />
+                  <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.fullName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground mt-1 capitalize">
+                    {user?.role}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/settings">
+                  <div className="flex items-center w-full cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </div>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout} disabled={logoutMutation.isPending}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>{logoutMutation.isPending ? "Logging out..." : "Log out"}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       
