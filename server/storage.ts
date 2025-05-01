@@ -23,7 +23,9 @@ export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getUsersByRole(role: string): Promise<User[]>;
   
   // Job methods
   getJob(id: number): Promise<Job | undefined>;
@@ -120,11 +122,43 @@ export class MemStorage implements IStorage {
       (user) => user.username === username
     );
   }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email === email
+    );
+  }
+  
+  async getUsersByRole(role: string): Promise<User[]> {
+    return Array.from(this.users.values()).filter(
+      (user) => user.role === role
+    );
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      role: insertUser.role || "candidate",
+      position: insertUser.position || null,
+      profileImage: insertUser.profileImage || null,
+      resume: insertUser.resume || null,
+      createdAt: new Date()
+    };
     this.users.set(id, user);
+    
+    // Create activity for user registration
+    await this.createActivity({
+      userId: id,
+      type: "user_registered",
+      details: { 
+        userId: id, 
+        username: user.username,
+        role: user.role 
+      }
+    });
+    
     return user;
   }
 
@@ -239,9 +273,9 @@ export class MemStorage implements IStorage {
       .filter(app => app.jobId === jobId);
   }
 
-  async getApplicationsByCandidate(candidateId: number): Promise<Application[]> {
+  async getApplicationsByCandidate(userId: number): Promise<Application[]> {
     return Array.from(this.applications.values())
-      .filter(app => app.candidateId === candidateId);
+      .filter(app => app.userId === userId);
   }
   
   async getApplicationsByStage(stage: string): Promise<Application[]> {
@@ -254,25 +288,24 @@ export class MemStorage implements IStorage {
     const application: Application = { 
       ...insertApplication, 
       id, 
+      status: insertApplication.status || "applied",
+      resume: insertApplication.resume || null,
+      coverLetter: insertApplication.coverLetter || null,
       appliedAt: new Date(), 
       updatedAt: new Date() 
     };
     this.applications.set(id, application);
     
-    // Update candidate stage
-    const candidate = await this.getCandidate(application.candidateId);
-    if (candidate) {
-      await this.updateCandidate(candidate.id, { stage: application.status });
-    }
-    
     // Create activity
     const job = await this.getJob(application.jobId);
+    const user = await this.getUser(application.userId);
     await this.createActivity({
-      userId: 1, // Default to first user
+      userId: application.userId,
       type: "application_created",
       details: { 
         applicationId: id, 
-        candidateId: application.candidateId,
+        userId: application.userId,
+        userName: user?.fullName || "Unknown User",
         jobId: application.jobId,
         jobTitle: job?.title || "Unknown Job"
       }
@@ -293,21 +326,16 @@ export class MemStorage implements IStorage {
     };
     this.applications.set(id, updatedApplication);
     
-    // Update candidate stage
-    const candidate = await this.getCandidate(updatedApplication.candidateId);
-    if (candidate) {
-      await this.updateCandidate(candidate.id, { stage: status });
-    }
-    
     // Create activity for status change
     const job = await this.getJob(updatedApplication.jobId);
+    const user = await this.getUser(updatedApplication.userId);
     await this.createActivity({
-      userId: 1, // Default to first user
+      userId: 1, // Default to first user (recruiter)
       type: "application_status_changed",
       details: { 
         applicationId: id, 
-        candidateId: updatedApplication.candidateId,
-        candidateName: candidate?.fullName || "Unknown Candidate",
+        userId: updatedApplication.userId,
+        userName: user?.fullName || "Unknown User",
         jobId: updatedApplication.jobId,
         jobTitle: job?.title || "Unknown Job",
         oldStatus,
@@ -338,12 +366,18 @@ export class MemStorage implements IStorage {
 
   async createInterview(insertInterview: InsertInterview): Promise<Interview> {
     const id = this.currentInterviewId++;
-    const interview: Interview = { ...insertInterview, id };
+    const interview: Interview = { 
+      ...insertInterview, 
+      id,
+      status: insertInterview.status || "scheduled",
+      location: insertInterview.location || null,
+      notes: insertInterview.notes || null
+    };
     this.interviews.set(id, interview);
     
     // Create activity
     const application = await this.getApplication(interview.applicationId);
-    const candidate = application ? await this.getCandidate(application.candidateId) : undefined;
+    const user = application ? await this.getUser(application.userId) : undefined;
     const job = application ? await this.getJob(application.jobId) : undefined;
     
     await this.createActivity({
@@ -352,8 +386,8 @@ export class MemStorage implements IStorage {
       details: { 
         interviewId: id, 
         applicationId: interview.applicationId,
-        candidateId: candidate?.id,
-        candidateName: candidate?.fullName || "Unknown Candidate",
+        userId: user?.id,
+        userName: user?.fullName || "Unknown User",
         jobId: job?.id,
         jobTitle: job?.title || "Unknown Job",
         scheduledAt: interview.scheduledAt
@@ -373,15 +407,15 @@ export class MemStorage implements IStorage {
     // Create activity if status changed
     if (interviewUpdate.status && interviewUpdate.status !== existingInterview.status) {
       const application = await this.getApplication(updatedInterview.applicationId);
-      const candidate = application ? await this.getCandidate(application.candidateId) : undefined;
+      const user = application ? await this.getUser(application.userId) : undefined;
       
       await this.createActivity({
         userId: updatedInterview.recruiterId,
         type: "interview_status_changed",
         details: { 
           interviewId: id, 
-          candidateId: candidate?.id,
-          candidateName: candidate?.fullName || "Unknown Candidate",
+          userId: user?.id,
+          userName: user?.fullName || "Unknown User",
           oldStatus: existingInterview.status,
           newStatus: interviewUpdate.status
         }
@@ -487,6 +521,7 @@ export class MemStorage implements IStorage {
       password: "password",
       fullName: "Sarah Johnson",
       email: "sarah@example.com",
+      role: "recruiter",
       position: "Senior Recruiter",
       profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
     };
@@ -603,44 +638,100 @@ export class MemStorage implements IStorage {
     this.createCandidate(candidate5);
     this.createCandidate(candidate6);
     
+    // Create candidate users
+    const candidateUser1: InsertUser = {
+      username: "michael",
+      password: "password",
+      fullName: "Michael Rodriguez",
+      email: "michael@example.com",
+      role: "candidate"
+    };
+    
+    const candidateUser2: InsertUser = {
+      username: "emily",
+      password: "password",
+      fullName: "Emily Chen",
+      email: "emily@example.com",
+      role: "candidate"
+    };
+    
+    const candidateUser3: InsertUser = {
+      username: "thomas",
+      password: "password",
+      fullName: "Thomas Wilson",
+      email: "thomas@example.com",
+      role: "candidate"
+    };
+    
+    const candidateUser4: InsertUser = {
+      username: "jessica",
+      password: "password",
+      fullName: "Jessica Parker",
+      email: "jessica@example.com",
+      role: "candidate"
+    };
+    
+    const candidateUser5: InsertUser = {
+      username: "david",
+      password: "password",
+      fullName: "David Nguyen",
+      email: "david@example.com",
+      role: "candidate"
+    };
+    
+    const candidateUser6: InsertUser = {
+      username: "alicia",
+      password: "password",
+      fullName: "Alicia Moore",
+      email: "alicia@example.com",
+      role: "candidate"
+    };
+    
+    const user2 = this.createUser(candidateUser1);
+    const user3 = this.createUser(candidateUser2);
+    const user4 = this.createUser(candidateUser3);
+    const user5 = this.createUser(candidateUser4);
+    const user6 = this.createUser(candidateUser5);
+    const user7 = this.createUser(candidateUser6);
+    
     // Create applications
     const application1: InsertApplication = {
-      candidateId: 1,
+      userId: 2,
       jobId: 1,
       status: "applied",
       coverLetter: "I'm excited to apply for this position..."
     };
     
     const application2: InsertApplication = {
-      candidateId: 2,
+      userId: 3,
       jobId: 2,
       status: "applied",
       coverLetter: "With my background in product management..."
     };
     
     const application3: InsertApplication = {
-      candidateId: 3,
+      userId: 4,
       jobId: 1,
       status: "screening",
       coverLetter: "I believe my backend skills would complement..."
     };
     
     const application4: InsertApplication = {
-      candidateId: 4,
+      userId: 5,
       jobId: 3,
       status: "interview",
       coverLetter: "My design background makes me a perfect fit..."
     };
     
     const application5: InsertApplication = {
-      candidateId: 5,
+      userId: 6,
       jobId: 1,
       status: "offer",
       coverLetter: "I'm interested in applying my data science skills..."
     };
     
     const application6: InsertApplication = {
-      candidateId: 6,
+      userId: 7,
       jobId: 2,
       status: "hired",
       coverLetter: "I'm looking forward to bringing my marketing expertise..."

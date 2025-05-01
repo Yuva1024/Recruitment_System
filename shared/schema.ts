@@ -2,19 +2,23 @@ import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users (Recruiters)
+// Users (Recruiters and Candidates)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
   email: text("email").notNull().unique(),
+  role: text("role").notNull().default("candidate"), // recruiter, candidate
   position: text("position"),
   profileImage: text("profile_image"),
+  resume: text("resume"), // Only for candidates
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
+  createdAt: true,
 });
 
 // Jobs
@@ -55,13 +59,14 @@ export const insertCandidateSchema = createInsertSchema(candidates).omit({
   createdAt: true,
 });
 
-// Applications (links candidates to jobs)
+// Applications (links users to jobs)
 export const applications = pgTable("applications", {
   id: serial("id").primaryKey(),
-  candidateId: integer("candidate_id").notNull(),
+  userId: integer("user_id").notNull(), // The candidate user who applied
   jobId: integer("job_id").notNull(),
   status: text("status").notNull().default("applied"), // applied, screening, interview, offer, hired, rejected
   coverLetter: text("cover_letter"),
+  resume: text("resume"), // Optional resume specific to this application
   appliedAt: timestamp("applied_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
