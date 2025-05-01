@@ -1,11 +1,48 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertJobSchema, insertCandidateSchema, insertApplicationSchema, insertInterviewSchema } from "@shared/schema";
+import { insertJobSchema, insertCandidateSchema, insertApplicationSchema, insertInterviewSchema, User } from "@shared/schema";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
+import { setupAuth } from "./auth";
+// Helper middleware for checking if the user is a recruiter
+function recruitersOnly(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  
+  const user = req.user as User;
+  if (user.role !== "recruiter") {
+    return res.status(403).json({ message: "Access denied. Recruiter role required." });
+  }
+  
+  next();
+}
+
+// Helper middleware to check if the user is a candidate
+function candidatesOnly(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  
+  const user = req.user as User;
+  if (user.role !== "candidate") {
+    return res.status(403).json({ message: "Access denied. Candidate role required." });
+  }
+  
+  next();
+}
+
+// Helper middleware to check if a user is logged in
+function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  next();
+}
+
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.diskStorage({
@@ -30,6 +67,9 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  setupAuth(app);
+  
   // Health check
   app.get("/api/health", (req: Request, res: Response) => {
     res.json({ status: "ok" });
@@ -70,10 +110,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/jobs", async (req: Request, res: Response) => {
+  app.post("/api/jobs", recruitersOnly, async (req: Request, res: Response) => {
     try {
+      const user = req.user as User;
+      
       // Validate request body
-      const validatedData = insertJobSchema.parse(req.body);
+      const validatedData = insertJobSchema.parse({
+        ...req.body,
+        userId: user.id // Ensure the job is created by the current user
+      });
       
       // Create job
       const job = await storage.createJob(validatedData);
@@ -86,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/jobs/:id", async (req: Request, res: Response) => {
+  app.patch("/api/jobs/:id", recruitersOnly, async (req: Request, res: Response) => {
     try {
       const jobId = parseInt(req.params.id);
       const job = await storage.getJob(jobId);

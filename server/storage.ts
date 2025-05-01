@@ -182,6 +182,9 @@ export class MemStorage implements IStorage {
     const job: Job = { 
       ...insertJob, 
       id, 
+      status: insertJob.status || "open",
+      salary: insertJob.salary || null,
+      requirements: insertJob.requirements || null,
       createdAt: new Date()
     };
     this.jobs.set(id, job);
@@ -223,7 +226,14 @@ export class MemStorage implements IStorage {
     const id = this.currentCandidateId++;
     const candidate: Candidate = { 
       ...insertCandidate, 
-      id, 
+      id,
+      stage: insertCandidate.stage || "applied",
+      phone: insertCandidate.phone || null,
+      resumeUrl: insertCandidate.resumeUrl || null,
+      education: insertCandidate.education || null,
+      experience: insertCandidate.experience || null,
+      skills: insertCandidate.skills || null,
+      notes: insertCandidate.notes || null,
       createdAt: new Date() 
     };
     this.candidates.set(id, candidate);
