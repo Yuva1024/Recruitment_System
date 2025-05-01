@@ -29,7 +29,7 @@ type RegisterData = {
   password: string;
   email: string;
   fullName: string;
-  role: "recruiter" | "candidate";
+  role: "admin" | "recruiter" | "candidate";
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);

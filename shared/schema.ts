@@ -9,7 +9,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
   email: text("email").notNull().unique(),
-  role: text("role").notNull().default("candidate"), // recruiter, candidate
+  role: text("role").notNull().default("candidate"), // admin, recruiter, candidate
   position: text("position"),
   profileImage: text("profile_image"),
   resume: text("resume"), // Only for candidates
