@@ -99,6 +99,21 @@ export function setupAuth(app: Express) {
         password: await hashPassword(req.body.password),
       });
 
+      // If the user is registering as a candidate, create a candidate entry
+      if (user.role === "candidate") {
+        await storage.createCandidate({
+          fullName: user.fullName,
+          email: user.email,
+          userId: user.id,
+          stage: "applied",
+          skills: req.body.skills ? 
+            (typeof req.body.skills === 'string' ? 
+              req.body.skills.split(',').map((s: string) => s.trim()) : 
+              req.body.skills) : 
+            []
+        });
+      }
+
       // Log the user in automatically
       req.login(user, (err: any) => {
         if (err) return next(err);
