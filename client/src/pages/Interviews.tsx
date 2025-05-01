@@ -132,7 +132,13 @@ export default function Interviews() {
     const application = applications.find(app => app.id === applicationId);
     if (!application) return "Unknown Candidate";
     
-    const candidate = candidates.find(c => c.id === application.candidateId);
+    // First try to find candidate by userId from application
+    const candidateByUserId = candidates.find(c => c.userId === application.userId);
+    if (candidateByUserId) return candidateByUserId.fullName;
+    
+    // Fallback to searching for a candidate with matching user ID and email
+    const user = application.userId;
+    const candidate = candidates.find(c => c.userId === user);
     return candidate ? candidate.fullName : "Unknown Candidate";
   };
   
