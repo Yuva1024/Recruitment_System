@@ -1,12 +1,23 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
-const navItems = [
+// Common navigation items for all users
+const commonNavItems = [
   {
     href: "/",
     label: "Dashboard",
     icon: "fas fa-tachometer-alt",
   },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: "fas fa-cog",
+  },
+];
+
+// Navigation items only for recruiters
+const recruiterNavItems = [
   {
     href: "/jobs",
     label: "Jobs",
@@ -27,15 +38,42 @@ const navItems = [
     label: "Analytics",
     icon: "fas fa-chart-pie",
   },
+];
+
+// Navigation items only for candidates
+const candidateNavItems = [
   {
-    href: "/settings",
-    label: "Settings",
-    icon: "fas fa-cog",
+    href: "/my-applications",
+    label: "My Applications",
+    icon: "fas fa-file-alt",
+  },
+  {
+    href: "/job-search",
+    label: "Find Jobs",
+    icon: "fas fa-search",
   },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
+  const { user } = useAuth();
+  
+  // Determine which navigation items to show based on user role
+  const getNavItems = () => {
+    const items = [...commonNavItems];
+    
+    if (user?.role === "recruiter") {
+      // Add recruiter-specific items after the Dashboard item
+      items.splice(1, 0, ...recruiterNavItems);
+    } else if (user?.role === "candidate") {
+      // Add candidate-specific items after the Dashboard item
+      items.splice(1, 0, ...candidateNavItems);
+    }
+    
+    return items;
+  };
+  
+  const navItems = getNavItems();
   
   return (
     <div className="hidden md:flex md:flex-shrink-0">
@@ -74,13 +112,13 @@ export function Sidebar() {
               <div className="flex-shrink-0">
                 <img 
                   className="w-8 h-8 rounded-full" 
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                  alt="User profile"
+                  src={user?.profileImage || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user?.fullName || "User")} 
+                  alt={user?.fullName || "User profile"}
                 />
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-neutral-darkest">Sarah Johnson</p>
-                <p className="text-xs text-neutral-dark">Senior Recruiter</p>
+                <p className="text-sm font-medium text-neutral-darkest">{user?.fullName}</p>
+                <p className="text-xs text-neutral-dark capitalize">{user?.role} {user?.position ? `- ${user.position}` : ''}</p>
               </div>
             </div>
           </div>
