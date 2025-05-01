@@ -106,11 +106,7 @@ export function setupAuth(app: Express) {
           email: user.email,
           userId: user.id,
           stage: "applied",
-          skills: req.body.skills ? 
-            (typeof req.body.skills === 'string' ? 
-              req.body.skills.split(',').map((s: string) => s.trim()) : 
-              req.body.skills) : 
-            []
+          skills: []
         });
       }
 

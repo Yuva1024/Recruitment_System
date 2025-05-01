@@ -44,6 +44,7 @@ export const candidates = pgTable("candidates", {
   id: serial("id").primaryKey(),
   fullName: text("full_name").notNull(),
   email: text("email").notNull().unique(),
+  userId: integer("user_id"), // Related user (when candidate is registered)
   phone: text("phone"),
   resumeUrl: text("resume_url"),
   education: text("education"),

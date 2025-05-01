@@ -228,6 +228,7 @@ export class MemStorage implements IStorage {
       ...insertCandidate, 
       id,
       stage: insertCandidate.stage || "applied",
+      userId: insertCandidate.userId || null,
       phone: insertCandidate.phone || null,
       resumeUrl: insertCandidate.resumeUrl || null,
       education: insertCandidate.education || null,
