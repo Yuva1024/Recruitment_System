@@ -1,18 +1,25 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Job } from "@/types";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Job, Application } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { JobForm } from "@/components/jobs/JobForm";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Loader2 } from "lucide-react";
 
 export default function Jobs() {
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [isJobDetailOpen, setIsJobDetailOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { toast } = useToast();
@@ -21,7 +28,21 @@ export default function Jobs() {
     queryKey: ['/api/jobs'],
   });
   
+  // Function to get applications for a job
+  const { data: applications } = useQuery<Application[]>({
+    queryKey: ['/api/applications', { jobId: selectedJob?.id }],
+    enabled: !!selectedJob?.id && isJobDetailOpen,
+  });
+  
   const handleCreateJob = () => {
+    setSelectedJob(null);
+    setIsEditMode(false);
+    setIsJobModalOpen(true);
+  };
+  
+  const handleEditJob = (job: Job) => {
+    setSelectedJob(job);
+    setIsEditMode(true);
     setIsJobModalOpen(true);
   };
   
@@ -114,7 +135,14 @@ export default function Jobs() {
           </>
         ) : filteredJobs && filteredJobs.length > 0 ? (
           filteredJobs.map((job) => (
-            <Card key={job.id} className="overflow-hidden hover:shadow-md transition-shadow duration-200">
+            <Card 
+              key={job.id} 
+              className={cn(
+                "overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer",
+                selectedJob?.id === job.id && "border-primary shadow-md"
+              )}
+              onClick={() => setSelectedJob(job)}
+            >
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-lg font-medium">{job.title}</h3>
@@ -151,13 +179,17 @@ export default function Jobs() {
                 </p>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-primary">12 applicants</span>
+                  <span className="text-sm font-medium text-primary">
+                    {/* We can add a query to get application count later */}
+                    {0} applicants
+                  </span>
                   <div className="space-x-2">
-                    <Button variant="outline" size="sm">
-                      <i className="fas fa-edit"></i>
-                    </Button>
-                    <Button variant="default" size="sm">
-                      View
+                    <Button variant="outline" size="sm" onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditJob(job);
+                    }}>
+                      <i className="fas fa-edit mr-1"></i>
+                      Edit
                     </Button>
                   </div>
                 </div>
@@ -173,15 +205,148 @@ export default function Jobs() {
         )}
       </div>
       
-      {/* Job Modal */}
+      {/* Job Detail Modal */}
+      <Dialog open={!!selectedJob && !isJobModalOpen} onOpenChange={(open) => {
+        if (!open) setSelectedJob(null);
+        else setIsJobDetailOpen(true);
+      }}>
+        <DialogContent className="max-w-4xl">
+          {selectedJob && (
+            <>
+              <DialogHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <DialogTitle className="text-2xl">{selectedJob.title}</DialogTitle>
+                    <DialogDescription className="text-lg mt-1">
+                      {selectedJob.location}
+                    </DialogDescription>
+                  </div>
+                  <Badge variant={
+                    selectedJob.status === "open" ? "default" : 
+                    selectedJob.status === "paused" ? "secondary" : 
+                    "outline"
+                  }>
+                    {selectedJob.status}
+                  </Badge>
+                </div>
+              </DialogHeader>
+              
+              <Tabs defaultValue="details" className="mt-6">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="applications">Applications</TabsTrigger>
+                  <TabsTrigger value="candidates">Candidates</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="details" className="space-y-4 mt-4">
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="flex items-center">
+                      <i className="fas fa-dollar-sign mr-2 text-primary"></i>
+                      {selectedJob.salary || "Not specified"}
+                    </span>
+                    <span className="flex items-center">
+                      <i className="fas fa-calendar mr-2 text-primary"></i>
+                      Posted {formatDistanceToNow(new Date(selectedJob.createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg">Job Description</h3>
+                    <div className="text-neutral-dark whitespace-pre-line">
+                      {selectedJob.description}
+                    </div>
+                    
+                    {selectedJob.requirements && (
+                      <>
+                        <h3 className="font-semibold text-lg pt-4">Requirements</h3>
+                        <div className="text-neutral-dark whitespace-pre-line">
+                          {selectedJob.requirements}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="applications" className="mt-4">
+                  {applications && applications.length > 0 ? (
+                    <div className="space-y-4">
+                      {applications.map(application => (
+                        <Card key={application.id}>
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-center">
+                              <CardTitle className="text-base">
+                                {/* We'll need to get candidate name from user data */}
+                                Applicant
+                              </CardTitle>
+                              <Badge>{application.status || "Applied"}</Badge>
+                            </div>
+                            <CardDescription>
+                              Applied {formatDistanceToNow(new Date(application.appliedAt), { addSuffix: true })}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm">{application.coverLetter}</p>
+                          </CardContent>
+                          <CardFooter className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm">View Profile</Button>
+                            <Button size="sm">Review</Button>
+                          </CardFooter>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-neutral-dark">
+                      No applications found for this job posting.
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="candidates" className="mt-4">
+                  <div className="text-center py-8 text-neutral-dark">
+                    No candidates matched with this job yet.
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+              <div className="flex justify-between mt-6">
+                <Button variant="outline" onClick={() => setSelectedJob(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setIsEditMode(true);
+                  setIsJobModalOpen(true);
+                }}>
+                  <i className="fas fa-edit mr-2"></i>
+                  Edit Job
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Job Create/Edit Modal */}
       <Dialog open={isJobModalOpen} onOpenChange={setIsJobModalOpen}>
         <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{isEditMode ? "Edit Job" : "Create New Job"}</DialogTitle>
+            <DialogDescription>
+              {isEditMode 
+                ? "Update the details of your job posting."
+                : "Fill in the details to create a new job posting."}
+            </DialogDescription>
+          </DialogHeader>
           <JobForm 
+            job={isEditMode && selectedJob ? selectedJob : undefined}
             onSuccess={() => {
               setIsJobModalOpen(false);
+              setIsEditMode(false);
+              queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
               toast({
-                title: "Job created",
-                description: "Your job posting has been created successfully.",
+                title: isEditMode ? "Job updated" : "Job created",
+                description: isEditMode 
+                  ? "Your job posting has been updated successfully."
+                  : "Your job posting has been created successfully.",
               });
             }}
           />
