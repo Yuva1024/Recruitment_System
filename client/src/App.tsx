@@ -11,6 +11,8 @@ import Candidates from "@/pages/Candidates";
 import Interviews from "@/pages/Interviews";
 import Analytics from "@/pages/Analytics";
 import Settings from "@/pages/Settings";
+import JobSearch from "@/pages/JobSearch";
+import MyApplications from "@/pages/MyApplications";
 import { useEffect } from "react";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
@@ -67,6 +69,14 @@ function Router() {
         
         <ProtectedRoute path="/settings">
           <Settings />
+        </ProtectedRoute>
+        
+        <ProtectedRoute path="/job-search" requiredRole="candidate">
+          <JobSearch />
+        </ProtectedRoute>
+        
+        <ProtectedRoute path="/my-applications" requiredRole="candidate">
+          <MyApplications />
         </ProtectedRoute>
         
         <Route component={NotFound} />
