@@ -212,12 +212,64 @@ function RecruiterDashboard() {
   );
 }
 
+// Admin Dashboard
+function AdminDashboard() {
+  const { user } = useAuth();
+  
+  return (
+    <div className="py-6 px-4 sm:px-6 lg:px-8">
+      {/* Dashboard Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-neutral-darkest">Admin Dashboard</h2>
+        <p className="mt-1 text-sm text-neutral-dark">Welcome back, {user?.fullName}! Here's your system overview.</p>
+      </div>
+      
+      {/* Admin Quick Links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium">User Management</CardTitle>
+            <CardDescription>Manage system users and their roles</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="default" className="w-full mt-2" onClick={() => window.location.href = "/admin/users"}>
+              Go to User Management
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium">System Activity</CardTitle>
+            <CardDescription>View all system activities and logs</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="default" className="w-full mt-2" onClick={() => window.location.href = "/admin/activities"}>
+              View Activity Logs
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Recent Activity and Recruiter Tools */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RecentActivity />
+        <RecentJobs />
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   
   // Render different dashboard based on user role
   if (user?.role === "candidate") {
     return <CandidateDashboard />;
+  } else if (user?.role === "admin") {
+    return <AdminDashboard />;
   }
   
   // Default to recruiter dashboard
