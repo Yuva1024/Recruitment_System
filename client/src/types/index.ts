@@ -3,8 +3,10 @@ export interface User {
   username: string;
   fullName: string;
   email: string;
+  role: "recruiter" | "candidate";
   position?: string;
   profileImage?: string;
+  resume?: string;
 }
 
 export interface Job {
@@ -35,10 +37,11 @@ export interface Candidate {
 
 export interface Application {
   id: number;
-  candidateId: number;
+  userId: number;
   jobId: number;
   status: "applied" | "screening" | "interview" | "offer" | "hired" | "rejected";
   coverLetter?: string;
+  resume?: string;
   appliedAt: string | Date;
   updatedAt: string | Date;
 }

@@ -287,12 +287,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (req.query.jobId) {
         applications = await storage.getApplicationsByJob(parseInt(req.query.jobId as string));
-      } else if (req.query.candidateId) {
-        applications = await storage.getApplicationsByCandidate(parseInt(req.query.candidateId as string));
+      } else if (req.query.userId) {
+        applications = await storage.getApplicationsByUser(parseInt(req.query.userId as string));
       } else if (req.query.stage) {
         applications = await storage.getApplicationsByStage(req.query.stage as string);
       } else {
-        return res.status(400).json({ message: "Please provide a query parameter (jobId, candidateId, or stage)" });
+        return res.status(400).json({ message: "Please provide a query parameter (jobId, userId, or stage)" });
       }
       
       res.json(applications);

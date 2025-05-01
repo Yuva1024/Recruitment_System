@@ -113,9 +113,9 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: Error | null, user: SelectUser | false, info: { message: string } | undefined) => {
       if (err) return next(err);
-      if (!user) return res.status(401).json({ message: info.message || "Authentication failed" });
+      if (!user) return res.status(401).json({ message: info?.message || "Authentication failed" });
       
       req.login(user, (err) => {
         if (err) return next(err);

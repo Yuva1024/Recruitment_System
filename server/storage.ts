@@ -44,7 +44,7 @@ export interface IStorage {
   // Application methods
   getApplication(id: number): Promise<Application | undefined>;
   getApplicationsByJob(jobId: number): Promise<Application[]>;
-  getApplicationsByCandidate(candidateId: number): Promise<Application[]>;
+  getApplicationsByUser(userId: number): Promise<Application[]>;
   getApplicationsByStage(stage: string): Promise<Application[]>;
   createApplication(application: InsertApplication): Promise<Application>;
   updateApplicationStatus(id: number, status: string): Promise<Application | undefined>;
@@ -283,7 +283,7 @@ export class MemStorage implements IStorage {
       .filter(app => app.jobId === jobId);
   }
 
-  async getApplicationsByCandidate(userId: number): Promise<Application[]> {
+  async getApplicationsByUser(userId: number): Promise<Application[]> {
     return Array.from(this.applications.values())
       .filter(app => app.userId === userId);
   }
