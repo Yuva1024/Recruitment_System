@@ -162,7 +162,10 @@ export default function AdminUsers() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
+                            {/* Use createdAt if available, otherwise just display "Member" */}
+                            {user.createdAt 
+                              ? formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })
+                              : "Member"}
                           </TableCell>
                           <TableCell>
                             <Button 

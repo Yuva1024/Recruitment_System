@@ -5,7 +5,7 @@ import { Redirect, Route } from "wouter";
 
 interface ProtectedRouteProps {
   path: string;
-  requiredRole?: "recruiter" | "candidate";
+  requiredRole?: "admin" | "recruiter" | "candidate";
   children: ReactNode;
 }
 
@@ -33,7 +33,8 @@ export function ProtectedRoute({ path, requiredRole, children }: ProtectedRouteP
   }
 
   // If a specific role is required, check if the user has that role
-  if (requiredRole && user.role !== requiredRole) {
+  // Admin can access all pages regardless of requiredRole
+  if (requiredRole && user.role !== requiredRole && user.role !== "admin") {
     return (
       <Route path={path}>
         <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">

@@ -54,6 +54,20 @@ const candidateNavItems = [
   },
 ];
 
+// Navigation items only for admins
+const adminNavItems = [
+  {
+    href: "/admin/users",
+    label: "Manage Users",
+    icon: "fas fa-user-shield",
+  },
+  {
+    href: "/admin/activities",
+    label: "Activity Log",
+    icon: "fas fa-history",
+  },
+];
+
 export function Sidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
@@ -68,6 +82,11 @@ export function Sidebar() {
     } else if (user?.role === "candidate") {
       // Add candidate-specific items after the Dashboard item
       items.splice(1, 0, ...candidateNavItems);
+    } else if (user?.role === "admin") {
+      // Add admin-specific items after the Dashboard item
+      items.splice(1, 0, ...adminNavItems);
+      // Admin can also access recruiter pages
+      items.splice(3, 0, ...recruiterNavItems);
     }
     
     return items;
