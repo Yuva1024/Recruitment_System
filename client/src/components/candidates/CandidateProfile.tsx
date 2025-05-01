@@ -184,9 +184,9 @@ export function CandidateProfile({ candidate }: CandidateProfileProps) {
                             </p>
                           </div>
                           <Badge variant={
-                            application.status === "hired" ? "success" :
+                            application.status === "hired" ? "default" :
                             application.status === "rejected" ? "destructive" :
-                            application.status === "offer" ? "warning" :
+                            application.status === "offer" ? "secondary" :
                             "default"
                           }>
                             {application.status.charAt(0).toUpperCase() + application.status.slice(1)}

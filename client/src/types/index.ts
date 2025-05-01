@@ -25,6 +25,7 @@ export interface Candidate {
   id: number;
   fullName: string;
   email: string;
+  userId?: number;
   phone?: string;
   resumeUrl?: string;
   education?: string;

@@ -32,6 +32,12 @@ export default function Jobs() {
   const { data: applications } = useQuery<Application[]>({
     queryKey: ['/api/applications', { jobId: selectedJob?.id }],
     enabled: !!selectedJob?.id && isJobDetailOpen,
+    queryFn: async ({ queryKey }) => {
+      if (!selectedJob?.id) return [];
+      const res = await fetch(`/api/applications?jobId=${selectedJob.id}`);
+      if (!res.ok) throw new Error('Failed to fetch applications');
+      return res.json();
+    }
   });
   
   const handleCreateJob = () => {
@@ -207,8 +213,12 @@ export default function Jobs() {
       
       {/* Job Detail Modal */}
       <Dialog open={!!selectedJob && !isJobModalOpen} onOpenChange={(open) => {
-        if (!open) setSelectedJob(null);
-        else setIsJobDetailOpen(true);
+        if (!open) {
+          setSelectedJob(null);
+          setIsJobDetailOpen(false);
+        } else {
+          setIsJobDetailOpen(true);
+        }
       }}>
         <DialogContent className="max-w-4xl">
           {selectedJob && (
