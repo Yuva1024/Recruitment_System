@@ -15,6 +15,8 @@ import JobSearch from "@/pages/JobSearch";
 import MyApplications from "@/pages/MyApplications";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminActivities from "@/pages/AdminActivities";
+import AdminLogin from "@/pages/AdminLogin";
+import AdminRegister from "@/pages/AdminRegister";
 import { useEffect } from "react";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
@@ -47,8 +49,12 @@ function Router() {
   return (
     <MainLayout>
       <Switch>
+        {/* Public routes */}
         <Route path="/auth" component={AuthPage} />
+        <Route path="/admin/login" component={AdminLogin} />
+        <Route path="/admin/register" component={AdminRegister} />
         
+        {/* Protected routes */}
         <ProtectedRoute path="/">
           <Dashboard />
         </ProtectedRoute>

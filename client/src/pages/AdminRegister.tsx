@@ -25,18 +25,28 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Shield, LogIn } from "lucide-react";
+import { Shield, UserPlus } from "lucide-react";
 
 // Form schema
 const formSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  fullName: z.string().min(2, "Full name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+  adminSecretKey: z.string().min(1, "Admin secret key is required")
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-export default function AdminLogin() {
-  const { loginMutation, user } = useAuth();
+// This would normally be an environment variable or set by a superadmin
+const ADMIN_SECRET_KEY = "adminSecret123";
+
+export default function AdminRegister() {
+  const { registerMutation, user } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [error, setError] = useState<string | null>(null);
@@ -46,42 +56,55 @@ export default function AdminLogin() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
+      fullName: "",
+      email: "",
       password: "",
+      confirmPassword: "",
+      adminSecretKey: ""
     },
   });
 
   // Handle form submission
   const onSubmit = async (data: FormData) => {
     setError(null);
-    try {
-      await loginMutation.mutateAsync(data);
+    
+    // Verify admin secret key
+    if (data.adminSecretKey !== ADMIN_SECRET_KEY) {
+      setError("Invalid admin secret key");
       toast({
-        title: "Login successful",
-        description: "Welcome back, admin!",
+        title: "Registration failed",
+        description: "Invalid admin secret key",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      await registerMutation.mutateAsync({
+        username: data.username,
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+        role: "admin" // Force role to be admin
+      });
+      
+      toast({
+        title: "Registration successful",
+        description: "Your admin account has been created",
       });
     } catch (err: any) {
-      setError(err.message || "Invalid credentials");
+      setError(err.message || "Registration failed");
       toast({
-        title: "Login failed",
-        description: err.message || "Invalid credentials",
+        title: "Registration failed",
+        description: err.message || "Could not create admin account",
         variant: "destructive",
       });
     }
   };
 
-  // If user is already logged in, redirect to appropriate page
+  // If user is already logged in, redirect to dashboard
   if (user) {
-    if (user.role === "admin") {
-      return <Redirect href="/" />;
-    } else {
-      // Non-admin users should not access admin login
-      toast({
-        title: "Access denied",
-        description: "You do not have admin privileges",
-        variant: "destructive",
-      });
-      return <Redirect href="/" />;
-    }
+    return <Redirect to="/" />;
   }
 
   return (
@@ -96,9 +119,9 @@ export default function AdminLogin() {
 
           <Card className="border-none shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl">Admin Login</CardTitle>
+              <CardTitle className="text-xl">Register Admin Account</CardTitle>
               <CardDescription>
-                Log in to access the administrative dashboard
+                Create a new administrator account
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -114,10 +137,38 @@ export default function AdminLogin() {
                       <FormItem>
                         <FormLabel>Username</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="admin"
-                            {...field}
-                            autoComplete="username"
+                          <Input placeholder="admin_username" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Admin User" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="email" 
+                            placeholder="admin@example.com" 
+                            {...field} 
                           />
                         </FormControl>
                         <FormMessage />
@@ -136,7 +187,42 @@ export default function AdminLogin() {
                             type="password"
                             placeholder="••••••••"
                             {...field}
-                            autoComplete="current-password"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="adminSecretKey"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Admin Secret Key</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Enter admin secret key"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -151,23 +237,23 @@ export default function AdminLogin() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={loginMutation.isPending}
+                    disabled={registerMutation.isPending}
                   >
-                    {loginMutation.isPending ? (
-                      "Logging in..."
+                    {registerMutation.isPending ? (
+                      "Registering..."
                     ) : (
                       <>
-                        <LogIn className="mr-2 h-4 w-4" />
-                        Login
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Register Admin
                       </>
                     )}
                   </Button>
                 </form>
               </Form>
             </CardContent>
-            <CardFooter className="flex flex-col text-center text-sm text-muted-foreground">
-              <p>Default admin credentials:</p>
-              <p>Username: admin | Password: admin123</p>
+            <CardFooter className="flex flex-col gap-2 text-center text-sm text-muted-foreground">
+              <p>For demonstration purposes: </p>
+              <p>Admin Secret Key: adminSecret123</p>
             </CardFooter>
           </Card>
 
@@ -186,9 +272,9 @@ export default function AdminLogin() {
             <div className="mt-6 text-center">
               <Button
                 variant="outline"
-                onClick={() => navigate("/admin/register")}
+                onClick={() => navigate("/admin/login")}
               >
-                Register New Admin
+                Back to Admin Login
               </Button>
             </div>
           </div>
@@ -200,11 +286,11 @@ export default function AdminLogin() {
         <div className="flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 text-white">
           <div className="max-w-lg">
             <h2 className="text-4xl font-bold mb-6">
-              Admin Management Portal
+              Create Admin Account
             </h2>
             <p className="text-lg mb-8">
-              Securely access administrative tools to manage users, monitor system
-              activity, and configure platform settings.
+              Register a new administrator account with full system access privileges.
+              Administrators have complete control over the recruitment platform.
             </p>
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
@@ -212,9 +298,9 @@ export default function AdminLogin() {
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Secure Access</h3>
+                  <h3 className="font-medium">User Management</h3>
                   <p className="text-sm text-white/80">
-                    Enhanced security for administrative functions
+                    Create, edit, and remove user accounts
                   </p>
                 </div>
               </div>
@@ -223,9 +309,9 @@ export default function AdminLogin() {
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Complete Control</h3>
+                  <h3 className="font-medium">System Configuration</h3>
                   <p className="text-sm text-white/80">
-                    Manage all aspects of the recruitment platform
+                    Configure and customize platform settings
                   </p>
                 </div>
               </div>
@@ -234,9 +320,9 @@ export default function AdminLogin() {
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Audit Trail</h3>
+                  <h3 className="font-medium">Activity Monitoring</h3>
                   <p className="text-sm text-white/80">
-                    Comprehensive activity logging and monitoring
+                    Track all system activity and user actions
                   </p>
                 </div>
               </div>
