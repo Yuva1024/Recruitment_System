@@ -1,0 +1,69 @@
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
+9:36:51 AM [express] POST /api/register 500 in 8ms :: {"message":"Internal Server Error"}
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
+9:36:52 AM [express] POST /api/register 500 in 7ms :: {"message":"Internal Server Error"}
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
+9:36:52 AM [express] POST /api/register 500 in 5ms :: {"message":"Internal Server Error"}
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
+9:36:53 AM [express] POST /api/register 500 in 6ms :: {"message":"Internal Server Error"}
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
+9:36:53 AM [express] POST /api/register 500 in 6ms :: {"message":"Internal Server Error"}
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
+9:36:53 AM [express] POST /api/register 500 in 5ms :: {"message":"Internal Server Error"}
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
+9:36:54 AM [express] POST /api/register 500 in 7ms :: {"message":"Internal Server Error"}
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
+9:36:54 AM [express] POST /api/register 500 in 11ms :: {"message":"Internal Server Error"}
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
+9:36:54 AM [express] POST /api/register 500 in 7ms :: {"message":"Internal Server Error"}
+Error
+    at file:///C:/Users/Yuvaraj/Documents/GitHub/Recruitment_System/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.getUserByUsername (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\storage.ts:915:20)
+    at async <anonymous> (C:\Users\Yuvaraj\Documents\GitHub\Recruitment_System\server\auth.ts:83:28)
