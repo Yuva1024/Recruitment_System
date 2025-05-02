@@ -1,317 +1,310 @@
-# Talent Recruiter - Recruitment Management Platform
+# Recruitment System
 
-A comprehensive recruitment management platform designed to streamline the hiring process through advanced candidate tracking, job posting, and intelligent analytics.
+A comprehensive recruitment management platform built with React, Node.js, Express, and PostgreSQL that streamlines the entire hiring process for both recruiters and candidates.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [System Architecture](#system-architecture)
-- [Tech Stack](#tech-stack)
-- [Installation](#installation)
-- [Database Setup](#database-setup)
-- [API Documentation](#api-documentation)
-- [User Roles](#user-roles)
-- [Development Guidelines](#development-guidelines)
-- [Contributing](#contributing)
-- [Troubleshooting](#troubleshooting)
-
-## Overview
-
-Talent Recruiter is a full-featured recruitment management platform similar to Zoho Recruit. The system enables the entire recruitment lifecycle with distinct interfaces for recruiters and candidates. Recruiters can manage job postings, candidates, interviews, and analytics, while candidates can browse and apply for jobs through their own portal.
+![Recruitment System](generated-icon.png)
 
 ## Features
 
-### For Recruiters
-- Create and manage job listings
-- Track candidate applications
-- Schedule and manage interviews
-- View candidate profiles and resumes
-- Track recruitment pipeline metrics
-- View hiring analytics and dashboards
-
-### For Candidates
-- Browse available job listings
-- Submit job applications
-- Track application status
-- Manage personal profile and resume
-- Schedule interviews
-
-### For Administrators
-- User management (recruiters and candidates)
-- Activity monitoring
-- System configuration
-
-## System Architecture
-
-The application is built using a modern, scalable architecture:
-
-- **Frontend**: React with TypeScript, using a component-based architecture
-- **Backend**: Node.js/Express.js RESTful API
-- **Database**: PostgreSQL for persistent data storage
-- **ORM**: Drizzle ORM for database interactions
-- **Authentication**: Passport.js with session-based authentication
-- **State Management**: React Query for server state management
-- **Styling**: Tailwind CSS with shadcn/ui components
+- **Multi-User Role System**: Separate interfaces for recruiters, candidates, and administrators
+- **Job Management**: Create, edit, and manage job postings
+- **Candidate Portal**: Profile creation, skills management, and application tracking
+- **Application Processing**: End-to-end application lifecycle management
+- **Interview Scheduling**: Coordinate and track interviews
+- **Analytics Dashboard**: Recruitment metrics and pipeline visualization
+- **Activity Tracking**: Comprehensive audit trail of system activities
 
 ## Tech Stack
 
-### Frontend
-- React 18+
-- TypeScript
-- React Query (TanStack Query)
-- wouter (routing)
-- shadcn/ui components
-- Tailwind CSS
-- Lucide React (icons)
-- React Hook Form (form handling)
-- Zod (validation)
+- **Frontend**: React, TypeScript, Tailwind CSS, Shadcn UI
+- **Backend**: Node.js, Express
+- **Database**: PostgreSQL
+- **ORM**: Drizzle ORM
+- **Authentication**: Passport.js, express-session
+- **State Management**: TanStack Query (React Query)
+- **Form Handling**: React Hook Form with Zod validation
 
-### Backend
-- Node.js
-- Express.js
-- Passport.js (authentication)
-- Multer (file uploads)
-- PostgreSQL
-- Drizzle ORM
-- Zod (validation)
+## Prerequisites
 
-## Installation
+- Node.js (v16.0.0 or higher)
+- npm (v7.0.0 or higher)
+- PostgreSQL (v13.0 or higher) OR Supabase account
 
-### Prerequisites
-- Node.js (v18+ recommended)
-- npm or yarn
-- PostgreSQL database
+## Installation and Setup
 
-### Setup Steps
+### Option 1: Standard Local Setup with PostgreSQL
 
-1. Clone the repository
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/talent-recruiter.git
-   cd talent-recruiter
+   git clone https://github.com/Yuva1024/Recruitment_System.git
+   cd Recruitment_System
    ```
 
-2. Install dependencies
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. Set up environment variables
-   Create a `.env` file in the root directory with the following variables:
+3. **Set up PostgreSQL database**
+   - Install PostgreSQL on your machine if not already installed
+   - Create a new database:
+     ```bash
+     createdb recruitment_system
+     ```
+
+4. **Create a .env file in the project root**
    ```
-   NODE_ENV=development
-   SESSION_SECRET=your_secret_key_here
-   DATABASE_URL=postgres://username:password@localhost:5432/talent_recruiter
+   DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/recruitment_system
+   SESSION_SECRET=your_secure_random_string
+   ```
+   Replace `yourpassword` with your actual PostgreSQL password.
+
+5. **Install missing packages for Windows compatibility**
+   ```bash
+   npm install pg @types/pg dotenv connect-pg-simple @types/connect-pg-simple
    ```
 
-4. Initialize the database
+6. **For Windows compatibility, modify server/db.ts**
+   
+   If you're on Windows and encounter connection issues, change your db.ts file to this:
+   ```typescript
+   import 'dotenv/config';
+   import { drizzle } from 'drizzle-orm/node-postgres';
+   import * as schema from "@shared/schema";
+   import pg from 'pg';
+
+   if (!process.env.DATABASE_URL) {
+     throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
+   }
+
+   // Use standard PostgreSQL client for local development
+   const { Pool } = pg;
+   export const pool = new Pool({ 
+     connectionString: process.env.DATABASE_URL 
+   });
+
+   export const db = drizzle(pool, { schema });
+   ```
+
+7. **Push database schema**
    ```bash
    npm run db:push
    ```
 
-5. Start the development server
+8. **Start the development server**
    ```bash
    npm run dev
    ```
 
-6. Access the application at `http://localhost:5000`
+### Option 2: Supabase Setup (Recommended for Windows Users)
 
-## Database Setup
-
-The application uses PostgreSQL for data storage. The database schema includes the following tables:
-
-- `users` - User accounts (admins, recruiters, candidates)
-- `jobs` - Job listings
-- `candidates` - Candidate profiles
-- `applications` - Job applications
-- `interviews` - Interview scheduling
-- `activities` - System activity tracking
-- `session` - User sessions
-
-### Setting up a Local PostgreSQL Database
-
-1. Install PostgreSQL if not already installed
-2. Create a new database
-   ```sql
-   CREATE DATABASE talent_recruiter;
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Yuva1024/Recruitment_System.git
+   cd Recruitment_System
    ```
-3. Configure the connection string in your `.env` file
-4. Run the database migration
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Create a Supabase account and project**
+   - Sign up at [supabase.com](https://supabase.com)
+   - Create a new project
+   - Get your PostgreSQL connection string from the dashboard (Settings → Database)
+
+4. **Create a .env file in the project root**
+   ```
+   DATABASE_URL=your_supabase_connection_string
+   SESSION_SECRET=your_secure_random_string
+   ```
+   Replace `your_supabase_connection_string` with the connection string from Supabase.
+
+5. **Install postgres.js (better Windows compatibility)**
+   ```bash
+   npm install postgres
+   ```
+
+6. **Modify server/db.ts for Supabase**
+   ```typescript
+   import 'dotenv/config';
+   import { drizzle } from 'drizzle-orm/postgres-js';
+   import postgres from 'postgres';
+   import * as schema from "@shared/schema";
+
+   if (!process.env.DATABASE_URL) {
+     throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
+   }
+
+   // Configure postgres.js with the right SSL settings for Supabase
+   const connectionString = process.env.DATABASE_URL;
+   const client = postgres(connectionString, { 
+     ssl: 'require',
+     max: 10, // Connection pool size
+   });
+
+   export const db = drizzle(client, { schema });
+
+   // Export a pool interface that mimics pg for session store compatibility
+   export const pool = {
+     query: async (text, params = []) => {
+       try {
+         const result = await client.unsafe(text, params);
+         return { rows: result };
+       } catch (error) {
+         console.error('Database query error:', error);
+         throw error;
+       }
+     }
+   };
+   ```
+
+7. **Update drizzle.config.ts for SSL**
+   ```typescript
+   import type { Config } from "drizzle-kit";
+   import 'dotenv/config';
+
+   if (!process.env.DATABASE_URL) {
+     throw new Error("DATABASE_URL is not set");
+   }
+
+   export default {
+     schema: "./shared/schema.ts",
+     out: "./drizzle",
+     driver: 'pg',
+     dbCredentials: {
+       connectionString: process.env.DATABASE_URL,
+       ssl: true,
+     },
+   } satisfies Config;
+   ```
+
+8. **Push database schema**
    ```bash
    npm run db:push
    ```
 
-### Default Admin Credentials
+9. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-The system is seeded with default admin and recruiter accounts:
+## Application Structure
 
-- **Admin**
-  - Username: `admin`
-  - Password: `admin123`
-
-- **Recruiter**
-  - Username: `recruiter`
-  - Password: `recruiter123`
-
-## API Documentation
-
-The backend provides a comprehensive RESTful API for interacting with the system.
-
-### Authentication Endpoints
-
-| Endpoint | Method | Description | Authentication Required |
-|----------|--------|-------------|-------------------------|
-| `/api/register` | POST | Register a new user | No |
-| `/api/login` | POST | Authenticate a user | No |
-| `/api/logout` | POST | Log out the current user | Yes |
-| `/api/user` | GET | Get the current user | Yes |
-
-### Jobs Endpoints
-
-| Endpoint | Method | Description | Authentication Required |
-|----------|--------|-------------|-------------------------|
-| `/api/jobs` | GET | List all jobs | No |
-| `/api/jobs/:id` | GET | Get a specific job | No |
-| `/api/jobs` | POST | Create a new job | Yes (Recruiter) |
-| `/api/jobs/:id` | PATCH | Update a job | Yes (Recruiter) |
-| `/api/jobs/recent` | GET | Get recent jobs | No |
-
-### Candidates Endpoints
-
-| Endpoint | Method | Description | Authentication Required |
-|----------|--------|-------------|-------------------------|
-| `/api/candidates` | GET | List all candidates | Yes (Recruiter) |
-| `/api/candidates/:id` | GET | Get a specific candidate | Yes (Recruiter) |
-| `/api/candidates` | POST | Create a candidate | Yes |
-| `/api/candidates/:id` | PATCH | Update a candidate | Yes |
-| `/api/candidates/user/:userId` | GET | Get candidate by user ID | Yes |
-
-### Applications Endpoints
-
-| Endpoint | Method | Description | Authentication Required |
-|----------|--------|-------------|-------------------------|
-| `/api/applications` | GET | List applications (filter by jobId, userId, or stage) | Yes |
-| `/api/applications` | POST | Submit an application | Yes (Candidate) |
-| `/api/applications/:id/status` | PATCH | Update application status | Yes (Recruiter) |
-
-### Interviews Endpoints
-
-| Endpoint | Method | Description | Authentication Required |
-|----------|--------|-------------|-------------------------|
-| `/api/interviews` | GET | List interviews (filter by applicationId or upcoming) | Yes |
-| `/api/interviews` | POST | Schedule an interview | Yes (Recruiter) |
-| `/api/interviews/:id` | PATCH | Update an interview | Yes (Recruiter) |
-
-### Admin Endpoints
-
-| Endpoint | Method | Description | Authentication Required |
-|----------|--------|-------------|-------------------------|
-| `/api/admin/users` | GET | List all users | Yes (Admin) |
-| `/api/admin/users/:id` | DELETE | Delete a user | Yes (Admin) |
-| `/api/admin/activities` | GET | List system activities | Yes (Admin) |
-
-### Analytics Endpoints
-
-| Endpoint | Method | Description | Authentication Required |
-|----------|--------|-------------|-------------------------|
-| `/api/dashboard/stats` | GET | Get dashboard statistics | Yes (Recruiter, Admin) |
-| `/api/pipeline/stats` | GET | Get recruitment pipeline statistics | Yes (Recruiter, Admin) |
-
-## User Roles
-
-The system supports three user roles:
-
-### Administrator
-- Full system access
-- User management capabilities
-- Activity monitoring
-- System configuration
-
-### Recruiter
-- Create and manage job listings
-- Review applications
-- Manage candidate pipeline
-- Schedule interviews
-- View analytics
-
-### Candidate
-- Browse job listings
-- Submit applications
-- Track application status
-- Manage profile
-- Schedule interviews
-
-## Development Guidelines
-
-### Project Structure
+The application follows a structured organization:
 
 ```
-talent-recruiter/
-├── client/                # Frontend React application
+├── client/                 # Frontend React application
 │   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── lib/           # Utility functions
-│   │   ├── pages/         # Application pages
-│   │   ├── types/         # TypeScript type definitions
-│   │   ├── App.tsx        # Main application component
-│   │   └── main.tsx       # Application entry point
-├── server/                # Backend Express application
-│   ├── auth.ts            # Authentication logic
-│   ├── db.ts              # Database connection
-│   ├── index.ts           # Server entry point
-│   ├── routes.ts          # API routes
-│   ├── storage.ts         # Data storage service
-│   └── vite.ts            # Vite configuration for server
-├── shared/                # Shared code between client and server
-│   └── schema.ts          # Database schema and types
-└── uploads/               # Uploaded files (resumes, etc.)
+│   │   ├── components/     # Reusable UI components
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── lib/            # Utility functions
+│   │   ├── pages/          # Page components
+│   │   ├── types/          # TypeScript type definitions
+│   │   ├── App.tsx         # Main application component
+│   │   └── main.tsx        # Entry point
+│   └── index.html          # HTML template
+├── server/                 # Backend Express server
+│   ├── auth.ts             # Authentication configuration
+│   ├── db.ts               # Database connection
+│   ├── index.ts            # Server entry point
+│   ├── routes.ts           # API routes
+│   ├── storage.ts          # Data access layer
+│   └── vite.ts             # Vite integration
+├── shared/                 # Shared code between client and server
+│   └── schema.ts           # Database schema and types
+├── documentation/          # Project documentation
+├── .env                    # Environment variables (create this)
+├── drizzle.config.ts       # Drizzle ORM configuration
+├── package.json            # Project dependencies
+├── tsconfig.json           # TypeScript configuration
+└── vite.config.ts          # Vite build configuration
 ```
 
-### Code Style
+## User Accounts
 
-- Use TypeScript for type safety
-- Follow ESLint rules for code linting
-- Use Prettier for code formatting
-- Follow React best practices and hooks
+The system has three user roles with different access levels:
 
-### State Management
+### Admin Access
+- **Username**: admin
+- **Password**: admin123
+- Access to user management and system activity logs
 
-- Use React Query for server state
-- Use React Context for global application state
-- Use React's built-in useState and useReducer for component state
+### Recruiter Access
+- **Username**: recruiter
+- **Password**: recruiter123
+- Access to job posting, candidate management, and interview scheduling
+
+### Candidate Access
+- Create your own account through the registration page
+- Access to job search, application submission, and profile management
+
+## Common Issues & Troubleshooting
+
+### Database Connection Issues
+- Ensure PostgreSQL service is running
+- Verify your DATABASE_URL is correct in .env
+- For Windows users, try the Supabase option for easier setup
+
+### PostgreSQL SSL Error on Windows
+If you encounter SSL errors with PostgreSQL on Windows, try:
+1. Edit your pg_hba.conf file to allow local connections without SSL
+2. Use the Supabase option which handles SSL properly
+
+### Missing Dependencies
+If you encounter errors about missing modules:
+```bash
+npm install
+```
+
+### Port Already in Use
+If port 5000 is already in use:
+1. Change the port in server/index.ts
+2. Or kill the process using that port:
+   ```bash
+   npx kill-port 5000
+   ```
+
+## Development Workflow
+
+1. **Frontend Development**
+   - React components are in `client/src/components`
+   - Pages are in `client/src/pages`
+   - Global state is managed with React Query and context
+
+2. **Backend Development**
+   - API endpoints are defined in `server/routes.ts`
+   - Authentication logic is in `server/auth.ts`
+   - Database operations are in `server/storage.ts`
+
+3. **Database Schema Changes**
+   - Update the schema in `shared/schema.ts`
+   - Run `npm run db:push` to update the database
+
+4. **Adding New Features**
+   - Update schema if needed
+   - Add backend endpoints
+   - Create frontend components
+   - Connect with React Query
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## Troubleshooting
+## License
 
-### Common Issues
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-#### Authentication Problems
-- Ensure SESSION_SECRET is properly set in your environment variables
-- Verify PostgreSQL is running and the connection string is correct
-- Check that session table exists in the database
+## Acknowledgments
 
-#### Database Connection Issues
-- Verify PostgreSQL server is running
-- Check DATABASE_URL environment variable
-- Ensure database user has proper permissions
-
-#### Frontend API Connection
-- Check for CORS issues
-- Verify API endpoints are correct
-- Check network tab in browser dev tools for errors
-
-### Reporting Issues
-
-Please report issues through the GitHub issue tracker with:
-- Description of the issue
-- Steps to reproduce
-- Expected vs. actual behavior
-- Environment details (OS, browser, Node version, etc.)
+- [React](https://reactjs.org/)
+- [Express](https://expressjs.com/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Drizzle ORM](https://github.com/drizzle-team/drizzle-orm)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Shadcn UI](https://ui.shadcn.com/)
