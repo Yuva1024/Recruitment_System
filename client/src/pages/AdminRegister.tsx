@@ -104,7 +104,7 @@ export default function AdminRegister() {
 
   // If user is already logged in, redirect to dashboard
   if (user) {
-    return <Redirect to="/" />;
+    return <Redirect href="/" />;
   }
 
   return (
