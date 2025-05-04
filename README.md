@@ -2,7 +2,7 @@
 
 A comprehensive recruitment management platform built with React, Node.js, Express, and PostgreSQL that streamlines the entire hiring process for both recruiters and candidates.
 
-![Recruitment System](generated-icon.png)
+
 
 ## Features
 
